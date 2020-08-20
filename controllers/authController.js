@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { promisify } = require('util');
 
 const User = require('../models/userModel');
 
@@ -32,9 +33,8 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ error: 'This email already exists!' });
     }
     return res.status(500).json({
-      status: 'fail',
+      status: 'error',
       message: 'Server error!',
-      error: err.message,
     });
   }
 };
@@ -44,25 +44,69 @@ exports.signin = async (req, res) => {
 
   if (!email || !password) {
     return res.status(400).json({
+      status: 'error',
       message: 'Please provide email and password!',
     });
   }
 
   try {
+    // Check if user exists && password is correct
     const user = await User.findOne({ email }).select('+password');
 
     if (!user || !(await user.correctPassword(password, user.password))) {
       return res.status(401).json({
+        status: 'error',
         message: 'Incorrect email or password',
       });
     }
 
+    // If everything ok, send token to client
     return createSendToken(user, 200, res);
   } catch (err) {
     return res.status(500).json({
-      status: 'fail',
+      status: 'error',
       message: 'Server error!',
-      error: err.message,
+    });
+  }
+};
+
+exports.protect = async (req, res, next) => {
+  // Get token from headers
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    // eslint-disable-next-line prefer-destructuring
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    return res.status(401).json({
+      status: 'error',
+      message: 'You are not logged in! Please log in to get access.',
+    });
+  }
+
+  try {
+    // Verify token
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+    // Check if user still exists
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'The user belonging to this token does no longer exists.',
+      });
+    }
+
+    // grant access to protected route
+    req.user = user;
+    return next();
+  } catch (err) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Server error.',
     });
   }
 };
