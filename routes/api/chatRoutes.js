@@ -7,7 +7,13 @@ const router = express.Router();
 // Protect all routes after this middleware
 router.use(authController.protect);
 
+router.route('/')
+  .get(chatController.getAllConversations);
+
 router.route('/:id')
-  .post(chatController.sendMessage);
+  .post(chatController.sendMessageToUser);
+
+router.route('/conversations/:id')
+  .post(chatController.sendMessageToConversation);
 
 module.exports = router;

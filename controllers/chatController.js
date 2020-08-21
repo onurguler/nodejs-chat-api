@@ -2,7 +2,7 @@ const { Conversation, PRIVATE_CHAT } = require('../models/conversationModel');
 const Message = require('../models/messageModel');
 const User = require('../models/userModel');
 
-exports.sendMessage = async (req, res) => {
+exports.sendMessageToUser = async (req, res) => {
   const { text } = req.body;
 
   try {
@@ -28,8 +28,6 @@ exports.sendMessage = async (req, res) => {
         type: PRIVATE_CHAT,
         participants: [req.user.id, recipient.id],
       });
-
-      await conversation.save();
     }
 
     // Create message
@@ -38,6 +36,75 @@ exports.sendMessage = async (req, res) => {
       conversation: conversation.id,
       text,
     });
+
+    conversation.lastMessage = message.id;
+
+    await conversation.save();
+
+    return res.json({
+      status: 'success',
+      data: { message },
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Server error!',
+    });
+  }
+};
+
+exports.getAllConversations = async (req, res) => {
+  try {
+    const conversations = await Conversation.find({
+      participants: {
+        $in: [req.user.id],
+      },
+    }).populate('participants').populate('lastMessage');
+
+    return res.json({
+      status: 'success',
+      data: { conversations },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Server error!',
+    });
+  }
+};
+
+exports.sendMessageToConversation = async (req, res) => {
+  const { text } = req.body;
+
+  try {
+    // check conversation exists
+    const conversation = await Conversation.findById(req.params.id);
+
+    // If conversation does not exists, create a new conversation
+    if (!conversation) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Conversation not found with that id!',
+      });
+    }
+
+    if (!conversation.participants.includes(req.user.id)) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Conversation not found with that id!',
+      });
+    }
+
+    // Create message
+    const message = await Message.create({
+      user: req.user.id,
+      conversation: conversation.id,
+      text,
+    });
+
+    conversation.lastMessage = message.id;
+
+    await conversation.save();
 
     return res.json({
       status: 'success',
