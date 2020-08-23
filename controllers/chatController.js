@@ -117,3 +117,65 @@ exports.sendMessageToConversation = async (req, res) => {
     });
   }
 };
+
+exports.getConversation = async (req, res) => {
+  try {
+    const conversation = await Conversation.findById(req.params.id).populate('participants').populate('lastMessage');
+
+    if (conversation === null) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Conversation not found that id!',
+      });
+    }
+
+    const userInConversation = conversation.participants
+      .filter((user) => user.id.toString() === req.user.id.toString()).length > 0;
+
+    if (!userInConversation) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Conversation not found that id!',
+      });
+    }
+
+    return res.json({ status: 'success', data: { conversation } });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Server error!',
+    });
+  }
+};
+
+exports.getConversationMessages = async (req, res) => {
+  try {
+    const conversation = await Conversation.findById(req.params.id);
+
+    if (conversation === null) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Conversation not found that id!',
+      });
+    }
+
+    const userInConversation = conversation.participants
+      .filter((id) => id.toString() === req.user.id.toString()).length > 0;
+
+    if (!userInConversation) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Conversation not found that id!',
+      });
+    }
+
+    const messages = await Message.find({ conversation: req.params.id });
+
+    return res.json({ status: 'success', data: { messages } });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Server error!',
+    });
+  }
+};

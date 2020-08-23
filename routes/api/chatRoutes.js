@@ -10,10 +10,14 @@ router.use(authController.protect);
 router.route('/')
   .get(chatController.getAllConversations);
 
-router.route('/:id')
+router.route('/users/:id')
   .post(chatController.sendMessageToUser);
 
 router.route('/conversations/:id')
+  .get(chatController.getConversation)
   .post(chatController.sendMessageToConversation);
+
+router.route('/conversations/:id/messages')
+  .get(chatController.getConversationMessages);
 
 module.exports = router;
