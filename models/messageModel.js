@@ -9,7 +9,7 @@ const messageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Conversation',
   },
-  text: String,
+  text: { type: String, trim: true },
   createdAt: {
     type: Date,
     default: Date.now,

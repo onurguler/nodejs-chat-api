@@ -40,6 +40,8 @@ exports.sendMessageToUser = async (req, res) => {
       text,
     });
 
+    req.app.io.to(`conversation_${conversation.id}`).emit('chat_message', { message });
+
     conversation.lastMessage = message.id;
 
     await conversation.save();

@@ -21,16 +21,33 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 exports.signup = async (req, res) => {
-  const { name, email, password } = req.body;
+  const {
+    name,
+    username,
+    email,
+    password,
+  } = req.body;
 
   try {
-    const user = await User.create({ name, email, password });
+    const user = await User.create({
+      name,
+      username,
+      email,
+      password,
+    });
+
     return createSendToken(user, 201, res);
   } catch (err) {
-    // check mongodb duplicate key for email
+    // check mongodb duplicate key for username or email
     const error = { ...err };
     if (error.code === 11000) {
-      return res.status(400).json({ error: 'This email already exists!' });
+      if (error.keyPattern.username && error.keyPattern.username === 1) {
+        return res.status(400).json({ status: 'error', message: 'This username already exists.' });
+      }
+
+      if (error.keyPattern.email && error.keyPattern.email === 1) {
+        return res.status(400).json({ status: 'error', message: 'This email already exists.' });
+      }
     }
     return res.status(500).json({
       status: 'error',
@@ -51,7 +68,7 @@ exports.signin = async (req, res) => {
 
   try {
     // Check if user exists && password is correct
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select('+password +email');
 
     if (!user || !(await user.correctPassword(password, user.password))) {
       return res.status(401).json({
