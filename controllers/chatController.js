@@ -17,9 +17,12 @@ exports.sendMessageToUser = async (req, res) => {
     }
 
     // check conversation exists
-    let conversation = await Conversation.findOne({
+    let conversation = await Conversation.find({
       type: PRIVATE_CHAT,
-      participants: { $in: [req.user.id, req.params.id] },
+      participants: { $in: [req.user.id] },
+    }).findOne({
+      type: PRIVATE_CHAT,
+      participants: { $in: [recipient.id] },
     });
 
     // If conversation does not exists, create a new conversation
@@ -101,6 +104,8 @@ exports.sendMessageToConversation = async (req, res) => {
       conversation: conversation.id,
       text,
     });
+
+    req.app.io.to(`conversation_${conversation.id}`).emit('chat_message', { message });
 
     conversation.lastMessage = message.id;
 
