@@ -10,7 +10,7 @@ router.use(authController.protect);
 router.route('/')
   .get(chatController.getAllConversations);
 
-router.route('/users/:id')
+router.route('/users/:username')
   .post(chatController.sendMessageToUser);
 
 router.route('/conversations/:id')

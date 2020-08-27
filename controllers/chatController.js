@@ -6,7 +6,7 @@ exports.sendMessageToUser = async (req, res) => {
   const { text } = req.body;
 
   try {
-    const recipient = await User.findById(req.params.id);
+    const recipient = await User.findOne({ username: req.params.username });
 
     // check recipient user is exists
     if (!recipient) {
