@@ -11,11 +11,17 @@ router.route('/me')
   .get(userController.getMe, userController.getUser)
   .patch(userController.updateMe);
 
+router.route('/me/avatar')
+  .patch(userController.upload.single('avatar'), userController.updateAvatar);
+
 router.route('/')
   .get(userController.getAllUsers);
 
 router.route('/:id')
   .get(userController.getUser);
+
+router.route('/:id/avatar/:filename')
+  .get(userController.getUserAvatar);
 
 router.route('/user/:username')
   .get(userController.getUserByUsername);
