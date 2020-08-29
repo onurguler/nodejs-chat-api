@@ -127,3 +127,39 @@ exports.protect = async (req, res, next) => {
     });
   }
 };
+
+exports.changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    const user = await User.findById(req.user.id).select('+password +email');
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found with that id!',
+      });
+    }
+
+    if (!(await user.correctPassword(currentPassword, user.password))) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Current password does not match!',
+      });
+    }
+
+    user.password = newPassword;
+
+    await user.save();
+
+    return res.json({
+      status: 'success',
+      message: 'Your password was succesfully changed.',
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Server Error!',
+    });
+  }
+};
